@@ -1,11 +1,16 @@
 *.png
 *.jpg
 *.txt
-*.log
-visual_search.json
 !nouns.txt
 Todo.md
 data-dir/
 __pycache__/
+<<<<<<< HEAD
 .env
 .venv*
+=======
+*.pyc
+points_history.json
+points_summary.txt
+src/.bak-*/
+>>>>>>> my-custom-branch
