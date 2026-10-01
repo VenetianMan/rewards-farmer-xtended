@@ -28,7 +28,7 @@ MOBILE_UA = (
 
 # Ollama & LLM settings
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
-DEFAULT_MODEL = os.environ.get("OLLAMA_MODEL", "llama3.2")
+DEFAULT_MODEL = os.environ.get("OLLAMA_MODEL", "gemma4:e2b")
 MODEL_FALLBACK_PREFERENCES = (
 	"llama3.2",
 	"llama3.2:3b",
@@ -74,5 +74,5 @@ OAUTH_TOKEN_URL = "https://login.microsoftonline.com/consumers/oauth2/v2.0/token
 
 # PR-85 & Headless Fallback Constants, awesome stuff
 DISABLE_DATABASE = False
-AUTOMATIC = False
-REWARDS_HEADLESS = False
+AUTOMATIC = True
+REWARDS_HEADLESS = True

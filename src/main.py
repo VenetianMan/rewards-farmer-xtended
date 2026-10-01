@@ -18,10 +18,12 @@ from constants import (
     PROFILE_NAME,
     USER_DATA_DIR,
     DISABLE_DATABASE,
-    AUTOMATIC
+    AUTOMATIC,
+    REWARDS_HEADLESS
 )
 
-DB_FILE = "completed_profiles.txt"
+# Force the database file to ALWAYS save in the main project folder
+DB_FILE = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "completed_profiles.txt"))
 
 # ==========================================
 # 1. OLLAMA LIFECYCLE MANAGEMENT
@@ -39,7 +41,7 @@ def ensure_ollama_running(model_name: str):
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
             )
-            time.sleep(3)  # Brief pause for initial process binding
+            time.sleep(3)
     except Exception as exc:
         print(f"[WARN] Failed to auto-start Ollama service: {exc}")
 
@@ -114,9 +116,10 @@ def run_profile_execution(profile_name: str, args) -> bool:
         with BrowserManager(
             user_data_dir=USER_DATA_DIR,
             profile_name=profile_name,
-            headless=args.headless,
+            # Fix: Respect BOTH command line arguments and constants.py headless settings
+            headless=(args.headless or getattr(constants, 'REWARDS_HEADLESS', REWARDS_HEADLESS)),
         ) as driver:
-            print("[INFO] Browser session started successfully.")
+            print(f"[INFO] Browser session started successfully for {profile_name}.")
 
             rewards = rewards_tasks.RewardsTaskUtils(
                 driver,
@@ -184,31 +187,33 @@ def main():
         print("They will automatically become available again tomorrow.")
         sys.exit(0)
 
-    # Boot Ollama only if there's work to do
-    ensure_ollama_running(args.model)
-    resolved_model, is_online = llm_utils.resolve_available_model(args.model)
-    if is_online:
-        print(f"[PRE-FLIGHT] Ollama engine ready with model: {resolved_model}")
-    else:
-        print("[PRE-FLIGHT] Ollama offline or unavailable. Operating with intelligent offline fallback.")
-
     try:
+        ensure_ollama_running(args.model)
+        resolved_model, is_online = llm_utils.resolve_available_model(args.model)
+        
+        if is_online:
+            print(f"[PRE-FLIGHT] Ollama engine ready with model: {resolved_model}")
+        else:
+            print("[PRE-FLIGHT] Ollama offline or unavailable. Operating with intelligent offline fallback.")
+
         while True:
             available_tasks = [t for t in all_tasks if t.profile_name not in completed_today_set]
             if not available_tasks:
                 print("\n🎉 All profiles are completed for today!")
                 break
 
-            print("\nPlease choose a profile to run:")
+            print("\n" + "=" * 40)
+            print("Remaining profiles to run:")
             for i, task in enumerate(available_tasks):
                 print(f"({i}) [{task.profile_name}] | {task.gaia_name} | {task.user_name}")
+            print("=" * 40)
 
             if not AUTOMATIC:
                 input_number = input("Select Number: ").strip()
             else:
                 random_index = random.randint(0, len(available_tasks) - 1)
                 input_number = str(random_index)
-                print(f"[AUTOMATIC MODE] Selected profile {input_number}")
+                print(f"\n[AUTOMATIC MODE] Selected profile {input_number}")
                 time.sleep(random.uniform(1, 3))
 
             if re.match(r"^\d+$", input_number):
@@ -223,6 +228,9 @@ def main():
 
                     if not AUTOMATIC:
                         input("Press Enter to return to menu...")
+                    else:
+                        print(f"\n[AUTOMATIC] Finished {selected_task.profile_name}. Pausing for 5 seconds before booting the next profile...")
+                        time.sleep(5)
                 else:
                     print(f"Out of range. Pick between 0 and {len(available_tasks) - 1}.")
             else:
@@ -231,14 +239,13 @@ def main():
     finally:
         kill_ollama(args.model)
 
+
 if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
         print("\n[INFO] Run interrupted by user. Exiting cleanly.")
-        kill_ollama(DEFAULT_MODEL)
         sys.exit(130)
     except Exception as exc:
         print(f"\n[FATAL] Unhandled error: {exc}")
-        kill_ollama(DEFAULT_MODEL)
         sys.exit(1)
