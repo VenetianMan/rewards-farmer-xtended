@@ -71,3 +71,8 @@ REWARDS_ACTIVITIES_URL = "https://prod.rewardsplatform.microsoft.com/dapi/me/act
 OAUTH_AUTHORIZE_URL = "https://login.live.com/oauth20_authorize.srf"
 OAUTH_REDIRECT_URL = "https://login.live.com/oauth20_desktop.srf"
 OAUTH_TOKEN_URL = "https://login.microsoftonline.com/consumers/oauth2/v2.0/token"
+
+# PR-85 & Headless Fallback Constants, awesome stuff
+DISABLE_DATABASE = False
+AUTOMATIC = False
+REWARDS_HEADLESS = False
